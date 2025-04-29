@@ -1,9 +1,13 @@
 const { MongoClient, ObjectId } = require('mongodb');
 
-// ✅ MongoDB URI
-const uri = "mongodb+srv://suraj78725:babu321@cluster0.rajqhet.mongodb.net/chatdb?retryWrites=true&w=majority&appName=Cluster0&tlsAllowInvalidCertificates=true";
+// ✅ MongoDB URI from Environment Variables (Safe & Railway compatible)
+const uri = process.env.MONGO_URI; 
 
-const client = new MongoClient(uri);
+const client = new MongoClient(uri, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    tlsAllowInvalidCertificates: true // ✅ important for Railway
+});
 
 let messagesCollection;
 
@@ -45,7 +49,7 @@ async function fetchConversation(sender, receiver, callback) {
     try {
         const messages = await messagesCollection.find({
             $or: [
-                { sender: sender, receiver: receiver },
+                { sender, receiver },
                 { sender: receiver, receiver: sender }
             ]
         }).sort({ _id: 1 }).toArray();
@@ -56,7 +60,7 @@ async function fetchConversation(sender, receiver, callback) {
     }
 }
 
-// Mark as seen
+// Mark messages as seen
 async function markMessagesAsSeen(sender, receiver) {
     try {
         await messagesCollection.updateMany(
@@ -81,7 +85,7 @@ async function deleteMessageById(messageId) {
     }
 }
 
-// Update (Edit) a message
+// Update (edit) a message
 async function updateMessageById(messageId, newContent) {
     try {
         if (!messageId || messageId.length !== 24) {
